@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DefectEye - Inspection Station</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#10141a;--bay:#171c24;--bay2:#1f2630;--line:#303a47;--steel:#c4ccd6;--mut:#8593a3;--yel:#ffc400;--ok:#2bd576;--wr:#ff9f1c;--bad:#ff4d4d;
+--head:'Barlow Condensed','Arial Narrow',Impact,sans-serif;--body:'Barlow',system-ui,Segoe UI,Arial,sans-serif}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--ink);color:var(--steel);font:15px/1.4 var(--body);display:grid;grid-template-rows:auto auto auto auto 1fr;overflow:hidden}
+button,select,input{font:inherit}
+header{display:flex;align-items:center;gap:18px;padding:10px 20px;background:var(--bay);border-bottom:1px solid var(--line)}
+.logo{font:800 30px/1 var(--head);color:#fff;letter-spacing:.5px}.logo i{font-style:normal;color:var(--yel)}
+.tag{font:600 15px var(--head);color:var(--mut);letter-spacing:1px}
+.sp{flex:1}.led{display:flex;align-items:center;gap:8px;font:600 15px var(--head);letter-spacing:1px}
+.led b{width:11px;height:11px;border-radius:50%;background:#4b5563}.led.on b{background:var(--ok);box-shadow:0 0 10px var(--ok);animation:bl 1s infinite}
+@keyframes bl{50%{opacity:.35}}
+#clock{font:700 20px var(--head);color:#fff;min-width:80px;text-align:right}
+.haz{height:8px;background:repeating-linear-gradient(-45deg,var(--yel) 0 14px,#111 14px 28px)}
+.wrap{display:grid;grid-template-columns:1fr 390px;min-height:0}
+main{padding:16px 20px;overflow:auto;display:flex;flex-direction:column;gap:14px;min-height:0}
+.ctrl{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{background:var(--bay2);color:#fff;border:1px solid var(--line);border-radius:3px;padding:10px 16px;font:700 16px var(--head);letter-spacing:.8px;cursor:pointer;transition:transform .08s}
+.btn:hover{border-color:var(--yel)}.btn:active{transform:translateY(1px)}.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.go{background:var(--yel);color:#111;border-color:var(--yel)}
+select,input[type=file]{background:var(--bay2);color:var(--steel);border:1px solid var(--line);border-radius:3px;padding:9px}
+:focus-visible{outline:2px solid var(--yel);outline-offset:2px}
+.scan{display:grid;grid-template-columns:1fr 280px;gap:14px}
+.view{position:relative;background:#06080b;border:1px solid var(--line);aspect-ratio:5/4;max-height:52vh;width:100%;overflow:hidden;display:grid;place-items:center}
+.view img{width:100%;height:100%;object-fit:contain;display:block}
+.view .ph{color:var(--mut);font:600 20px var(--head);letter-spacing:2px;text-align:center}
+.cr{position:absolute;width:26px;height:26px;border:3px solid var(--yel)}.cr.a{top:8px;left:8px;border-right:0;border-bottom:0}.cr.b{top:8px;right:8px;border-left:0;border-bottom:0}
+.cr.c{bottom:8px;left:8px;border-right:0;border-top:0}.cr.d{bottom:8px;right:8px;border-left:0;border-top:0}
+.laser{position:absolute;left:0;right:0;height:3px;background:var(--yel);box-shadow:0 0 18px 6px rgba(255,196,0,.55);top:0;display:none}
+.view.scanning .laser{display:block;animation:sw .9s linear infinite}.view.scanning img{filter:brightness(.7)}
+@keyframes sw{from{top:0}to{top:100%}}
+.stamp{position:absolute;right:16px;bottom:16px;padding:6px 18px;border:4px solid;font:800 44px/1 var(--head);letter-spacing:3px;transform:rotate(-8deg);background:rgba(6,8,11,.75);display:none}
+.stamp.show{display:block;animation:st .25s cubic-bezier(.2,1.6,.4,1)}@keyframes st{from{transform:rotate(-8deg) scale(2.2);opacity:0}}
+.PASS{color:var(--ok);border-color:var(--ok)}.REWORK{color:var(--wr);border-color:var(--wr)}.RECYCLE{color:var(--bad);border-color:var(--bad)}
+.panel{background:var(--bay);border:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:10px}
+.panel h2{margin:0;font:700 18px var(--head);letter-spacing:1px;color:#fff}
+.finding{display:flex;gap:8px;align-items:center;font-size:14px}.finding i{width:10px;height:10px;border-radius:2px}
+.belt{position:relative;background:#0b0e13;border:1px solid var(--line);height:112px;overflow:hidden}
+.belt:before{content:"";position:absolute;left:0;right:0;bottom:0;height:16px;background:repeating-linear-gradient(90deg,#252d38 0 18px,#1a2029 18px 36px);animation:bt 1.2s linear infinite}
+.belt.idle:before{animation:none}@keyframes bt{to{background-position:36px 0}}
+.belt .lab{position:absolute;top:6px;left:10px;font:600 13px var(--head);letter-spacing:1.5px;color:var(--mut)}
+.tiles{position:absolute;left:10px;bottom:20px;display:flex;gap:10px;flex-direction:row-reverse;justify-content:flex-end;width:calc(100% - 20px)}
+.tile{width:70px;height:56px;border:3px solid;background:#000 center/cover;flex:none;animation:in .4s ease-out}
+@keyframes in{from{transform:translateX(-90px);opacity:0}}
+.tile.PASS{border-color:var(--ok)}.tile.REWORK{border-color:var(--wr)}.tile.RECYCLE{border-color:var(--bad)}
+.tbl{overflow:auto;border:1px solid var(--line);flex:1;min-height:120px}
+table{width:100%;border-collapse:collapse;font-size:13px}th{position:sticky;top:0;background:var(--bay2);font:700 14px var(--head);letter-spacing:1px;text-align:left;padding:8px}td{padding:7px 8px;border-top:1px solid var(--line)}
+.pill{font:700 13px var(--head);letter-spacing:1px;padding:2px 9px;border:2px solid;border-radius:2px}
+aside{background:var(--bay);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.kpi{padding:14px 16px;border-bottom:1px solid var(--line)}
+.big{display:flex;align-items:baseline;gap:10px}.big b{font:800 76px/0.9 var(--head);color:#fff}.big span{font:600 16px var(--head);letter-spacing:1px;color:var(--mut)}
+.mini{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.mini div{background:var(--bay2);border-top:3px solid var(--line);padding:6px 8px}.mini b{display:block;font:800 26px/1 var(--head);color:#fff}.mini span{font-size:11px;color:var(--mut)}
+.stack{display:flex;height:12px;margin-top:12px;background:var(--bay2)}.stack i{display:block;transition:width .5s}
+.dfx{margin-top:12px;font-size:13px;display:grid;gap:6px}.dfx div{display:grid;grid-template-columns:90px 1fr 24px;gap:8px;align-items:center}.dfx s{display:block;height:8px;background:var(--yel);text-decoration:none;transition:width .5s}
+.chat{flex:1;display:flex;flex-direction:column;min-height:0}.chat h2{margin:0;padding:12px 16px 4px;font:700 18px var(--head);letter-spacing:1px;color:#fff}
+#log{flex:1;overflow:auto;padding:6px 16px;display:flex;flex-direction:column;gap:7px}
+.m{padding:8px 11px;max-width:90%;font-size:14px;border-left:3px solid}.u{align-self:flex-end;background:#243142;border-color:var(--yel)}.a{background:var(--bay2);border-color:var(--steel)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:4px 16px}.chips button{background:none;color:var(--steel);border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:12px;cursor:pointer}.chips button:hover{border-color:var(--yel);color:#fff}
+.chat form{display:flex;gap:6px;padding:10px 16px 14px}.chat input{flex:1;background:var(--ink);border:1px solid var(--line);color:#fff;padding:9px;border-radius:3px}
+
+.stage{position:relative;height:420px;border:1px solid var(--line);background:#0b0e13;overflow:hidden;cursor:grab;flex:none}
+.stage:active{cursor:grabbing}.stage canvas{display:block;width:100%;height:100%}
+.stage .ttl{position:absolute;top:10px;left:14px;font:700 16px var(--head);letter-spacing:1.5px;color:#fff;pointer-events:none}
+.stage .ttl small{display:block;font:500 12px var(--body);color:var(--mut);letter-spacing:0}
+.legend{position:absolute;right:12px;bottom:10px;display:flex;gap:8px;pointer-events:none}
+.legend div{background:rgba(10,13,18,.82);border-left:4px solid;padding:4px 10px;font:700 15px var(--head);letter-spacing:1px;color:#fff}
+.legend b{font-size:22px;margin-left:6px}
+.view img.slide{animation:sl .45s ease-out}@keyframes sl{from{transform:translateX(-100%)}}
+.feed{display:flex;gap:14px;align-items:center;background:#0b0e13;border-bottom:1px solid var(--line);padding:5px 20px;font:600 14px var(--head);letter-spacing:1px;overflow:hidden;white-space:nowrap}
+.feed b{background:var(--yel);color:#111;padding:1px 8px;flex:none}.feed span{color:var(--steel);overflow:hidden;text-overflow:ellipsis}
+.sec{margin:0;font:700 18px var(--head);letter-spacing:2px;color:#fff}.sec em{font-style:normal;color:var(--yel)}
+.views{position:absolute;top:8px;right:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:62%}
+.views button{background:rgba(10,13,18,.85);color:var(--steel);border:1px solid var(--line);padding:4px 10px;font:700 13px var(--head);letter-spacing:1px;cursor:pointer}
+.views button:hover{border-color:var(--yel)}.views button.on{background:var(--yel);color:#111;border-color:var(--yel)}
+#radar{position:absolute;left:12px;bottom:10px;background:rgba(10,13,18,.85);border:1px solid var(--line);pointer-events:none}
+.ops{display:flex;gap:22px;align-items:center;padding:6px 20px;background:var(--bay2);border-bottom:1px solid var(--line);font:600 13px var(--head);letter-spacing:1px;white-space:nowrap;overflow:hidden}
+.ops b{color:var(--mut);margin-right:6px}#andon{display:flex;gap:5px;align-items:center}#andon i{width:12px;height:12px;border-radius:50%;background:#2b3542}
+#andon i.r.on{background:var(--bad);box-shadow:0 0 10px var(--bad)}#andon i.y.on{background:var(--wr);box-shadow:0 0 10px var(--wr)}#andon i.g.on{background:var(--ok);box-shadow:0 0 10px var(--ok)}#andon u{text-decoration:none;margin-left:6px;color:#fff}
+.chips2{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.chips2 div{background:var(--bay2);padding:6px 8px;border-left:3px solid var(--yel)}
+.chips2 b{display:block;font:800 22px/1 var(--head);color:#fff}.chips2 span{font-size:10px;color:var(--mut);letter-spacing:.5px}
+#spc{width:100%;margin-top:10px;background:#0b0e13;border:1px solid var(--line)}aside{overflow:auto}.chat{min-height:280px}
+#boot{position:fixed;inset:0;background:#0b0e13;z-index:50;display:grid;place-items:center;transition:opacity .5s}#boot.off{opacity:0;pointer-events:none}
+.bw{width:min(520px,90vw)}.bt{font:800 56px var(--head);color:#fff;letter-spacing:1px}.bt i{color:var(--yel);font-style:normal}
+#bl{font:13px/1.8 monospace;color:var(--ok);min-height:120px;margin:12px 0}.bootbar{height:6px;background:#1f2630}.bootbar i{display:block;height:100%;width:0;background:var(--yel);transition:width .35s}
+@media(max-width:980px){body{overflow:auto;display:block}.wrap{display:block}.scan{grid-template-columns:1fr}aside{border-left:0}.chat{min-height:420px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body>
+<div id="boot"><div class="bw"><div class="bt">DEFECT<i>EYE</i></div><pre id="bl"></pre><div class="bootbar"><i id="bp"></i></div></div></div>
+<header><div class="logo">DEFECT<i>EYE</i></div><div class="tag">STATION 01 // NO FLAW LEAVES THE FLOOR</div><div class="sp"></div>
+ <button class="btn" id="snd" onclick="sound(!snd)" style="padding:5px 12px;font-size:14px">SOUND: OFF</button><div class="led" id="led"><b></b><span id="ledt">LINE IDLE</span></div><div id="clock">--:--:--</div></header>
+<div class="haz"></div>
+<div class="ops"><span><b>SHIFT</b>A 06:00-14:00</span><span><b>LINE</b>L-01</span><span><b>WORK ORDER</b><span id="wo"></span></span><span><b>PRODUCT</b>Lamp housing + lens set</span><span><b>STANDARD</b>AQL 1.0 / IATF 16949</span><span><b>OPERATOR</b>QC-07</span><span class="sp"></span>
+ <span id="andon"><i class="r"></i><i class="y"></i><i class="g on"></i><u id="andont">ANDON GREEN: RUNNING NORMAL</u></span></div>
+<div class="feed"><b>LIVE FEED</b><span id="feed">The line is quiet. Waiting for the first suspect...</span></div>
+<div class="wrap">
+<main>
+ <div class="ctrl">
+  <button class="btn go" id="runb" onclick="runDataset()">FIRE UP THE LINE (BUILT-IN DATASET)</button>
+  <select id="ptype" aria-label="Part type"><option value="part">Moulded car part</option><option value="lens">Lens</option></select>
+  <input type="file" id="file" accept="image/*" aria-label="Choose image">
+  <button class="btn" onclick="upload()">SCAN MY PART</button>
+  <span class="sp"></span>
+  <button class="btn" onclick="location='/api/report'">PRINT SHIFT REPORT (PDF)</button>
+ </div>
+ <div class="scan">
+  <div class="view" id="view"><div class="ph" id="ph">SLIDE A PART ONTO THE STAGE<br>OR FIRE UP THE LINE</div><img id="img" alt="" hidden>
+   <i class="cr a"></i><i class="cr b"></i><i class="cr c"></i><i class="cr d"></i><div class="laser"></div><div class="stamp" id="stamp"></div></div>
+  <div class="panel"><h2>WHAT WE <em style="color:var(--yel);font-style:normal">CAUGHT</em></h2><div id="det" class="finding" style="color:var(--mut)">Nothing on the stage. Yet.</div>
+   <h2>THE VERDICT</h2><div id="act" style="font-size:15px;color:#fff">-</div>
+   <button class="btn" id="vb" style="display:none;margin-top:auto" onclick="verify()">I AGREE: SIGN OFF</button></div>
+ </div>
+ <div class="stage" id="stage"><div class="ttl">THE GAUNTLET<small>Drag to rotate. Every part runs it: scan, verdict, bin. Pick a camera top right.</small></div>
+  <div class="views" id="views"></div><canvas id="radar" width="270" height="110"></canvas>
+  <div class="legend"><div style="border-color:var(--ok)">PASS<b id="bn_PASS">0</b></div><div style="border-color:var(--wr)">REWORK<b id="bn_REWORK">0</b></div><div style="border-color:var(--bad)">RECYCLE<b id="bn_RECYCLE">0</b></div></div></div>
+ <h2 class="sec">THE EVIDENCE <em>LOG</em></h2>
+ <div class="tbl"><table><thead><tr><th>#</th><th>TIME</th><th>PART</th><th>DEFECTS</th><th>DECISION</th><th>VERIFIED</th></tr></thead><tbody id="hist"></tbody></table></div>
+</main>
+<aside>
+ <div class="kpi"><h2 class="sec" style="margin-bottom:10px">SHIFT <em>SCOREBOARD</em></h2><div class="big"><b id="s_checked">0</b><span>PARTS GRILLED TODAY</span></div>
+  <div class="mini"><div style="border-color:var(--ok)"><b id="s_PASS">0</b><span>Pass</span></div><div style="border-color:var(--wr)"><b id="s_REWORK">0</b><span>Rework</span></div>
+   <div style="border-color:var(--bad)"><b id="s_RECYCLE">0</b><span>Recycle</span></div><div style="border-color:var(--yel)"><b id="s_verified">0</b><span>Verified</span></div></div>
+  <div class="stack"><i id="b1" style="background:var(--ok)"></i><i id="b2" style="background:var(--wr)"></i><i id="b3" style="background:var(--bad)"></i></div>
+  <div class="chips2"><div><b id="s_rate">0%</b><span>FIRST-PASS YIELD</span></div><div><b id="s_rej">0%</b><span>SCRAP RATE</span></div><div><b id="s_dpp">0.00</b><span>DEFECTS / PART</span></div></div><canvas id="spc" width="340" height="96"></canvas><div class="dfx" id="dfx"></div></div>
+ <div class="chat"><h2>ASK THE <span style="color:var(--yel)">INSPECTOR</span></h2><div id="log"><div class="m a">Inspector on duty. Interrogate me: gate cuts, flash, fingerprints, verdicts, today's numbers.</div></div>
+  <div class="chips"><button onclick="ask(this)">What is a gate cut?</button><button onclick="ask(this)">Why recycle?</button><button onclick="ask(this)">How many checked?</button></div>
+  <form onsubmit="send(event)"><input id="q" placeholder="Interrogate the Inspector..." autocomplete="off"><button class="btn go">ASK</button></form></div>
+</aside></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);let cur=null,lineOn=false;
+const CLR={scrap:'var(--bad)',gate_cut:'var(--wr)',fingerprint:'#38bdf8'};
+setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString(),1000);
+function line(on){$('led').classList.toggle('on',on);$('ledt').textContent=on?'LINE RUNNING':'LINE IDLE';lineOn=on;if(hum)hum.gain.setTargetAtTime(snd&&on?.025:0,AC.currentTime,.3)}
+async function stats(){const s=await (await fetch('/api/stats')).json();
+ for(const k of['checked','verified','PASS','REWORK','RECYCLE'])$('s_'+k).textContent=s[k];for(const k of['PASS','REWORK','RECYCLE'])$('bn_'+k).textContent=s[k];$('s_rate').textContent=s.pass_rate+'%';
+ const nd=Object.values(s.defect_types).reduce((a,b)=>a+b,0);$('s_rej').textContent=(s.checked?Math.round(100*s.RECYCLE/s.checked):0)+'%';$('s_dpp').textContent=(s.checked?nd/s.checked:0).toFixed(2);
+ drawScreen(s);andon(s);
+ const t=s.checked||1;$('b1').style.width=100*s.PASS/t+'%';$('b2').style.width=100*s.REWORK/t+'%';$('b3').style.width=100*s.RECYCLE/t+'%';
+ const mx=Math.max(1,...Object.values(s.defect_types));
+ $('dfx').innerHTML=Object.entries(s.defect_types).map(([k,v])=>`<div><span>${k.replace('_',' ')}</span><s style="width:${100*v/mx}%;background:${CLR[k]}"></s><b>${v}</b></div>`).join('')}
+async function hist(){const r=await (await fetch('/api/history')).json();spc(r.slice(0,30));
+ $('hist').innerHTML=r.slice(0,60).map(x=>`<tr><td>${x.id}</td><td>${x.ts}</td><td>${x.name}</td><td>${x.defects.map(d=>d.type.replace('_',' ')).join(', ')||'-'}</td><td><span class="pill ${x.decision}">${x.decision}</span></td><td>${x.verified?'Yes':'No'}</td></tr>`).join('')}
+const refresh=()=>Promise.all([stats(),hist()]);
+function scanning(on){$('view').classList.toggle('scanning',on);if(on){$('stamp').className='stamp'}}
+function show(r){cur=r;$('ph').hidden=true;$('img').hidden=false;$('img').src=r.image;
+ const s=$('stamp');s.className='stamp show '+r.decision;s.textContent=r.decision;
+ $('det').innerHTML=r.defects.length?r.defects.map(d=>`<div class="finding"><i style="background:${CLR[d.type]}"></i>${d.type.replace('_',' ')} (${d.area}px)</div>`).join(''):'<span style="color:var(--ok)">No defects found</span>';
+ $('det').style.display='block';$('det').insertAdjacentHTML('afterbegin','<div style="font:600 12px monospace;color:var(--mut);margin-bottom:6px">SN '+sn(r)+'</div>');verdictSound(r.decision);$('act').innerHTML='<b style="font:700 21px var(--head);letter-spacing:.5px">'+QUIP[r.decision]+'</b><br>'+r.action;feedAdd(r);$('vb').style.display='block';$('vb').disabled=false;
+}
+const QUIP={PASS:'Clean as a whistle. Ship it.',REWORK:'So close. Needs a touch-up.',RECYCLE:'Beyond saving. Off to regrind.'};
+const feed=[];function feedAdd(r){const d=[...new Set(r.defects.map(x=>x.type.replace('_',' ')))].join(', ');
+ feed.unshift('#'+r.id+' '+r.name.replace(/\.\w+$/,'')+' -> '+r.decision+(d?' ('+d+')':''));feed.length=Math.min(feed.length,5);$('feed').textContent=feed.join('   //   ')}
+const wait=ms=>new Promise(z=>setTimeout(z,ms));
+async function present(r){spawn(r);cur=null;$('vb').style.display='none';$('ph').hidden=true;$('stamp').className='stamp';
+ $('det').innerHTML='<span style="color:var(--mut)">Scanning part...</span>';$('act').textContent='-';
+ const im=$('img');im.hidden=false;im.src=r.raw;im.classList.remove('slide');void im.offsetWidth;im.classList.add('slide');
+ await wait(450);beep(2200,.06,'sine');scanning(true);await wait(800);scanning(false);show(r)}
+async function upload(){const f=$('file').files[0];if(!f)return alert('Choose an image first.');
+ const fd=new FormData();fd.append('file',f);fd.append('part_type',$('ptype').value);
+ const r=await fetch('/api/inspect',{method:'POST',body:fd});if(!r.ok)return alert('That file is not a readable image.');
+ await present(await r.json());refresh()}
+async function runDataset(){$('runb').disabled=true;line(true);const names=await (await fetch('/api/samples')).json();
+ for(const n of names){const r=await (await fetch('/api/inspect-sample/'+n,{method:'POST'})).json();await present(r);await refresh();await wait(250)}
+ line(false);$('runb').disabled=false}
+async function verify(){if(!cur)return;await fetch('/api/verify/'+cur.id,{method:'POST'});$('vb').disabled=true;refresh()}
+function add(t,c){const d=document.createElement('div');d.className='m '+c;d.textContent=t;$('log').appendChild(d);$('log').scrollTop=1e9;return d}
+async function ask2(t){add(t,'u');const w=add('...','a');
+ try{w.textContent=(await (await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:t})})).json()).reply}catch{w.textContent='Assistant unavailable.'}}
+function send(e){e.preventDefault();const t=$('q').value.trim();if(t){$('q').value='';ask2(t)}}
+function ask(b){ask2(b.textContent)}
+
+/* ================= 3D LINE (three.js) ================= */
+const T=window.THREE;let S=null;const parts=[];
+const COL={PASS:0x2bd576,REWORK:0xff9f1c,RECYCLE:0xff4d4d};
+function textSprite(w,h,sw,sh,draw){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'));
+ const s=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(c),transparent:true,depthTest:false}));s.scale.set(sw,sh,1);return s}
+function binLabel(t,sub,col){return textSprite(512,128,2.9,.72,g=>{g.fillStyle='rgba(10,13,18,.92)';g.fillRect(0,0,512,128);g.fillStyle=col;g.fillRect(0,0,14,128);
+ g.fillStyle='#fff';g.font='800 56px "Barlow Condensed","Arial Narrow",Impact,sans-serif';g.fillText(t,32,62);g.fillStyle='#9aa7b8';g.font='600 28px Barlow,Arial,sans-serif';g.fillText(sub,32,106)})}
+function init3d(){
+ const box=$('stage');
+ if(!T){box.insertAdjacentHTML('beforeend','<div style="position:absolute;inset:0;display:grid;place-items:center;color:var(--mut);font:600 18px var(--head);letter-spacing:1px">3D VIEW NEEDS INTERNET TO LOAD THREE.JS</div>');return}
+ const scene=new T.Scene();scene.background=new T.Color(0x0b0e13);scene.fog=new T.Fog(0x0b0e13,15,34);
+ const cam=new T.PerspectiveCamera(42,2.8,.1,70);
+ const ren=new T.WebGLRenderer({antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));box.appendChild(ren.domElement);
+ scene.add(new T.AmbientLight(0x9aa7b8,.8));const sun=new T.DirectionalLight(0xffffff,.9);sun.position.set(4,8,5);scene.add(sun);
+ const lamp=new T.PointLight(0xffc400,1.2,9);lamp.position.set(0,2.4,0);scene.add(lamp);
+ const grid=new T.GridHelper(50,50,0x2a3340,0x151b23);grid.position.y=-.86;scene.add(grid);
+ const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.fillStyle='#1b222c';g.fillRect(0,0,64,64);g.fillStyle='#2b3542';g.fillRect(0,0,6,64);
+ const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(30,1);
+ const side=new T.MeshStandardMaterial({color:0x222a35,roughness:.8});
+ const belt=new T.Mesh(new T.BoxGeometry(15,.3,2.6),[side,side,new T.MeshStandardMaterial({map:tex,roughness:.9}),side,side,side]);belt.position.set(-1.5,0,0);scene.add(belt);
+ const railM=new T.MeshStandardMaterial({color:0xffc400,roughness:.5,metalness:.3});
+ for(const z of[-1.4,1.4]){const r=new T.Mesh(new T.BoxGeometry(15,.14,.12),railM);r.position.set(-1.5,.3,z);scene.add(r)}
+ const am=new T.MeshStandardMaterial({color:0x39414d,metalness:.6,roughness:.4});
+ for(const z of[-1.7,1.7]){const p=new T.Mesh(new T.BoxGeometry(.22,2,.22),am);p.position.set(0,.9,z);scene.add(p)}
+ const bm=new T.Mesh(new T.BoxGeometry(.4,.3,3.8),am);bm.position.set(0,1.95,0);scene.add(bm);
+ const cm=new T.Mesh(new T.CylinderGeometry(.16,.2,.3,16),new T.MeshStandardMaterial({color:0xffc400,emissive:0xffc400,emissiveIntensity:.6}));cm.position.set(0,1.65,0);scene.add(cm);
+ const sheetM=new T.MeshBasicMaterial({color:0xffc400,transparent:true,opacity:.08,side:T.DoubleSide,depthWrite:false});
+ const sheet=new T.Mesh(new T.PlaneGeometry(3.2,1.6),sheetM);sheet.rotation.y=Math.PI/2;sheet.position.set(0,.95,0);scene.add(sheet);
+ const bins={};
+ function bin(key,x,z,col,t,sub){const bg=new T.BoxGeometry(2.4,1.2,2.4);const gp=new T.Group();
+  gp.add(new T.Mesh(bg,new T.MeshBasicMaterial({color:col,transparent:true,opacity:.1,depthWrite:false})));
+  gp.add(new T.LineSegments(new T.EdgesGeometry(bg),new T.LineBasicMaterial({color:col})));
+  const fl=new T.Mesh(new T.BoxGeometry(2.4,.1,2.4),new T.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.35}));fl.position.y=-.55;gp.add(fl);
+  gp.position.set(x,-.25,z);scene.add(gp);const l=new T.PointLight(col,.6,5);l.position.set(x,.9,z);scene.add(l);
+  const lb=binLabel(t,sub,'#'+col.toString(16).padStart(6,'0'));lb.position.set(x,1.45,z);scene.add(lb);bins[key]={x,z,items:[]}}
+ bin('PASS',7.6,0,0x2bd576,'PASS BIN','Qualified: to assembly');bin('REWORK',3.5,3.9,0xff9f1c,'REWORK BIN','Trim gate / clean lens');bin('RECYCLE',3.5,-3.9,0xff4d4d,'RECYCLE BIN','Scrap: to regrind');
+ const pm=new T.MeshStandardMaterial({color:0x8593a3,metalness:.7,roughness:.35}),pist={};
+ for(const k of[1,-1]){const m=new T.Mesh(new T.BoxGeometry(.7,.45,.5),pm);m.position.set(3.5,.5,k*2.1);scene.add(m);pist[k]={m,e:0,t:0}}
+ 
+ const floor=new T.Mesh(new T.PlaneGeometry(60,40),new T.MeshStandardMaterial({color:0x10151c,roughness:.95}));floor.rotation.x=-Math.PI/2;floor.position.y=-.87;scene.add(floor);
+ const laneM=new T.MeshBasicMaterial({color:0xffc400});for(const z of[-6.5,6.5]){const ln=new T.Mesh(new T.BoxGeometry(50,.02,.14),laneM);ln.position.set(1,-.85,z);scene.add(ln)}
+ const wcv=document.createElement('canvas');wcv.width=1024;wcv.height=256;const wx=wcv.getContext('2d');
+ wx.fillStyle='#141a22';wx.fillRect(0,0,1024,256);wx.strokeStyle='#202935';for(let i=0;i<=1024;i+=64){wx.beginPath();wx.moveTo(i,0);wx.lineTo(i,256);wx.stroke()}
+ wx.fillStyle='#ffc400';wx.fillRect(0,238,1024,18);wx.fillStyle='#fff';wx.font='800 118px "Barlow Condensed","Arial Narrow",Impact,sans-serif';wx.textAlign='center';wx.fillText('ZERO DEFECT ZONE',512,138);
+ wx.fillStyle='#8593a3';wx.font='600 32px Arial';wx.fillText('QUALITY IS NOT AN ACT. IT IS A HABIT.',512,196);
+ const wall=new T.Mesh(new T.PlaneGeometry(44,11),new T.MeshBasicMaterial({map:new T.CanvasTexture(wcv)}));wall.position.set(1,4.6,-10);scene.add(wall);
+ for(const [x,z] of[[-11,-8],[13,-8]]){const pl=new T.Mesh(new T.BoxGeometry(.7,12,.7),new T.MeshStandardMaterial({color:0x2a323d,metalness:.5}));pl.position.set(x,5,z);scene.add(pl);const st=new T.Mesh(new T.BoxGeometry(.74,1.2,.74),railM);st.position.set(x,-.2,z);scene.add(st)}
+ for(const [x,z] of[[-4,-6],[6,-6],[-4,6],[6,6]]){const lt=new T.Mesh(new T.BoxGeometry(8,.12,.5),new T.MeshBasicMaterial({color:0xdfe9ff}));lt.position.set(x,9,z);scene.add(lt)}
+ // andon tower
+ const tower={},tw=new T.Group();tw.position.set(-3.2,0,-2.4);const pole=new T.Mesh(new T.CylinderGeometry(.06,.06,2.4,10),am);pole.position.y=1.2;tw.add(pole);
+ [['g',0x2bd576,1.95],['y',0xff9f1c,2.3],['r',0xff4d4d,2.65]].forEach(([k,col,y])=>{const m=new T.Mesh(new T.CylinderGeometry(.22,.22,.32,20),new T.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:k==='g'?1.6:.08}));m.position.y=y;tw.add(m);tower[k]=m});scene.add(tw);
+ // inspection robot arm that tracks the part
+ const rb=new T.Mesh(new T.CylinderGeometry(.5,.6,.5,24),am);rb.position.set(1.6,-.6,-2.8);scene.add(rb);
+ const rp=new T.Group();rp.position.set(1.6,-.3,-2.8);const armM=new T.MeshStandardMaterial({color:0xffc400,metalness:.4,roughness:.5});
+ const a1=new T.Mesh(new T.BoxGeometry(.28,1.5,.28),armM);a1.position.y=.75;rp.add(a1);
+ const hd=new T.Mesh(new T.BoxGeometry(.5,.28,1.0),armM);hd.position.set(0,1.55,.4);rp.add(hd);
+ const eye=new T.Mesh(new T.CylinderGeometry(.14,.14,.2,16),new T.MeshStandardMaterial({color:0x38bdf8,emissive:0x38bdf8,emissiveIntensity:1.2}));eye.rotation.x=Math.PI/2;eye.position.set(0,1.55,.95);rp.add(eye);scene.add(rp);
+ // wall screen with live counts
+ const scv=document.createElement('canvas');scv.width=512;scv.height=192;const sct=new T.CanvasTexture(scv);
+ const scr=new T.Mesh(new T.PlaneGeometry(6.4,2.4),new T.MeshBasicMaterial({map:sct}));scr.position.set(-1.8,3.2,-9.9);scene.add(scr);
+ const screen={g:scv.getContext('2d'),tex:sct};
+ S={tower,rp,screen,sparks:[],scene,cam,ren,tex,sheetM,lamp,pist,bins,loader:new T.TextureLoader(),flash:0,th:.62,ph:1.0,drag:false,t:0,mode:'orbit',ct:0,cp:new T.Vector3(9,6,12),cl:new T.Vector3(2,.4,0),P:new T.Vector3(),L:new T.Vector3()};
+ let lx=0,ly=0;const cv=ren.domElement;
+ cv.addEventListener('pointerdown',e=>{S.drag=true;lx=e.clientX;ly=e.clientY;cv.setPointerCapture(e.pointerId)});cv.addEventListener('pointerup',()=>S.drag=false);
+ cv.addEventListener('pointermove',e=>{if(!S.drag)return;if(S.mode!=='orbit')setView('orbit');S.th-=(e.clientX-lx)*.006;S.ph=Math.max(.45,Math.min(1.45,S.ph-(e.clientY-ly)*.005));lx=e.clientX;ly=e.clientY});
+ const fit=()=>{const w=box.clientWidth,h=box.clientHeight;ren.setSize(w,h);cam.aspect=w/h;cam.updateProjectionMatrix()};new ResizeObserver(fit).observe(box);fit();
+ let last=performance.now();(function loop(n){requestAnimationFrame(loop);const dt=Math.min(.05,(n-last)/1000);last=n;tick(dt)})(last);
+}
+function makePart(r){
+ const g=new T.Group(),isLens=r.part_type==='lens',has=k=>r.defects.some(d=>d.type===k);
+ const body=new T.MeshStandardMaterial({color:isLens?0x8fb8d8:0xb4bcc6,metalness:isLens?.1:.55,roughness:isLens?.12:.45});
+ const hot=c=>new T.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.9});
+ if(isLens){g.add(new T.Mesh(new T.CylinderGeometry(.7,.7,.2,40),body));
+  const rim=new T.Mesh(new T.TorusGeometry(.7,.05,10,40),new T.MeshStandardMaterial({color:0x39414d,metalness:.6}));rim.rotation.x=Math.PI/2;g.add(rim);
+  if(has('fingerprint'))for(let i=1;i<=4;i++){const rg=new T.Mesh(new T.RingGeometry(.06*i,.06*i+.025,24),new T.MeshBasicMaterial({color:0x7dd3fc,transparent:true,opacity:.75,side:T.DoubleSide,depthWrite:false}));rg.rotation.x=-Math.PI/2;rg.position.set(.15,.115,.1);rg.scale.set(1,1.3,1);g.add(rg)}
+ }else{g.add(new T.Mesh(new T.BoxGeometry(1.7,.5,1.1),body));
+  for(const x of[-.45,.45]){const h=new T.Mesh(new T.CylinderGeometry(.17,.17,.02,20),new T.MeshStandardMaterial({color:0x0d1117}));h.position.set(x,.26,0);g.add(h)}
+  if(has('gate_cut')){const s=new T.Mesh(new T.BoxGeometry(.26,.26,.3),hot(0xff9f1c));s.position.set(.1,.2,-.7);g.add(s)}
+  if(has('scrap')){const a=new T.Mesh(new T.BoxGeometry(.5,.05,.12),hot(0xff4d4d));a.position.set(1.1,0,.2);g.add(a);const b=new T.Mesh(new T.BoxGeometry(.12,.05,.5),hot(0xff4d4d));b.position.set(-.3,0,.8);g.add(b)}}
+ g.position.set(-7.5,.55,0);
+ // floating image card: the captured / dataset image travelling with the part
+ const rawT=S.loader.load(r.raw),annT=S.loader.load(r.image);
+ const cardM=new T.MeshBasicMaterial({map:rawT});const card=new T.Mesh(new T.PlaneGeometry(1.8,1.44),cardM);
+ const frameM=new T.MeshBasicMaterial({color:0x4b5563});const frame=new T.Mesh(new T.PlaneGeometry(1.94,1.58),frameM);frame.position.z=-.01;card.add(frame);
+ const hex='#'+COL[r.decision].toString(16).padStart(6,'0');
+ const tag=textSprite(256,72,1.3,.37,x=>{x.fillStyle=hex;x.fillRect(0,0,256,72);x.fillStyle='#10141a';x.font='800 52px "Barlow Condensed","Arial Narrow",Impact,sans-serif';x.textAlign='center';x.fillText(r.decision,128,54)});
+ tag.position.set(0,-.98,0);tag.visible=false;card.add(tag);S.scene.add(card);
+ g.userData={body,dec:r.decision,state:'run',t:0,vy:0,card,cardM,frameM,tag,annT};return g}
+function spawn(r){if(!S)return;const g=makePart(r);S.scene.add(g);parts.push(g)}
+function tick(dt){
+ S.t+=dt;if(lineOn||parts.some(p=>p.userData.state!=='landed'))S.tex.offset.x-=dt*.43;
+ S.flash=Math.max(0,S.flash-dt*2.2);S.sheetM.opacity=.07+.05*Math.sin(S.t*5)+S.flash*.5;S.lamp.intensity=1.1+S.flash*2.5;
+ for(const p of parts){const u=p.userData;
+  if(u.state==='run'){p.position.x+=6*dt;p.rotation.y=Math.sin(S.t*2+p.id)*.06;
+   if(!u.scanned&&p.position.x>=0){u.state='scan';u.t=0;S.flash=1;u.frameM.color.setHex(0xffc400)}
+   else if(u.scanned&&p.position.x>=3.5&&u.dec!=='PASS'){u.state='push';S.pist[u.dec==='RECYCLE'?1:-1].t=1}
+   else if(p.position.x>6.3)u.state='fall'}
+  else if(u.state==='scan'){u.t+=dt;p.rotation.y+=dt*(14*(1-u.t/.5));
+   if(u.t>.5){u.state='run';u.scanned=true;u.body.emissive.setHex(COL[u.dec]);u.body.emissiveIntensity=.5;
+    u.cardM.map=u.annT;u.cardM.needsUpdate=true;u.frameM.color.setHex(COL[u.dec]);u.tag.visible=true}}
+  else if(u.state==='push'){const d=u.dec==='RECYCLE'?-1:1;p.position.z+=d*6.5*dt;p.rotation.y+=d*dt*3;if(Math.abs(p.position.z)>1.5)u.state='fall'}
+  else if(u.state==='fall'){const b=S.bins[u.dec],k=Math.min(1,dt*5);u.vy-=22*dt;p.position.y+=u.vy*dt;
+   p.position.x+=(b.x-p.position.x)*k;p.position.z+=(b.z-p.position.z)*k;
+   if(p.position.y<-.4){const lvl=Math.min(3,Math.floor(b.items.length/5));
+    p.position.set(b.x+(Math.random()-.5)*1.5,-.72+.22*lvl,b.z+(Math.random()-.5)*1.5);p.rotation.y=Math.random()*6;p.scale.setScalar(.55);
+    u.state='landed';S.scene.remove(u.card);b.items.push(p);burst(p.position.x,-.2,p.position.z,COL[u.dec]);
+    if(b.items.length>14){const o=b.items.shift();S.scene.remove(o);parts.splice(parts.indexOf(o),1)}}}
+  if(u.state!=='landed'){u.card.position.set(p.position.x,Math.max(p.position.y,.55)+1.45,p.position.z);u.card.quaternion.copy(S.cam.quaternion)}}
+ for(const k of[1,-1]){const q=S.pist[k];q.t=Math.max(0,q.t-dt*3);q.e+=((q.t>0?1:0)-q.e)*Math.min(1,dt*18);q.m.position.z=k*(2.1-.9*q.e)}
+ {let tx=0;const near=parts.find(p=>(p.userData.state==='run'||p.userData.state==='scan')&&p.position.x>-3.5&&p.position.x<4);if(near)tx=near.position.x;
+  S.rp.rotation.y+=(Math.atan2(tx-1.6,2.8)-S.rp.rotation.y)*Math.min(1,dt*6)}
+ for(let i=S.sparks.length-1;i>=0;i--){const m=S.sparks[i],d=m.userData;d.v.y-=12*dt;m.position.addScaledVector(d.v,dt);d.life-=dt;if(d.life<=0){S.scene.remove(m);S.sparks.splice(i,1)}}
+ let m=S.mode;if(m==='cinema'){S.ct+=dt;m=CIN[Math.floor(S.ct/5)%CIN.length]}
+ const P=S.P,L=S.L;let ride=null;
+ if(m==='ride')ride=parts.find(p=>p.userData.state!=='landed');
+ if(m==='top'){P.set(2,17,.8);L.set(2,0,0)}
+ else if(m==='side'){P.set(2,2.4,12.5);L.set(2,.7,0)}
+ else if(m==='scan'){P.set(-3.6,1.9,4.2);L.set(0,.8,0)}
+ else if(m==='bins'){P.set(12.5,5,9);L.set(4.6,-.2,0)}
+ else if(m==='ride'&&ride){P.set(ride.position.x-3.4,ride.position.y+1.9,ride.position.z+3.2);L.set(ride.position.x+1.4,ride.position.y+.3,ride.position.z)}
+ else{const R=13.5,th=S.th+(S.drag?0:Math.sin(S.t*.25)*.12);P.set(2+R*Math.sin(S.ph)*Math.sin(th),.3+R*Math.cos(S.ph),R*Math.sin(S.ph)*Math.cos(th));L.set(2,.4,0)}
+ const k=Math.min(1,dt*(m==='orbit'||S.drag?12:3.2));S.cp.lerp(P,k);S.cl.lerp(L,k);S.cam.position.copy(S.cp);S.cam.lookAt(S.cl);
+ radar();
+ S.ren.render(S.scene,S.cam)}
+function burst(x,y,z,col){if(!S)return;S.spg=S.spg||new T.BoxGeometry(.09,.09,.09);
+ for(let i=0;i<16;i++){const m=new T.Mesh(S.spg,new T.MeshBasicMaterial({color:col}));m.position.set(x,y,z);m.userData={v:new T.Vector3((Math.random()-.5)*4,2+Math.random()*3,(Math.random()-.5)*4),life:.7};S.scene.add(m);S.sparks.push(m)}}
+function drawScreen(s){if(!S||!S.screen)return;const g=S.screen.g,F='"Barlow Condensed","Arial Narrow",Impact,sans-serif';
+ g.fillStyle='#06080b';g.fillRect(0,0,512,192);g.fillStyle='#ffc400';g.fillRect(0,0,512,6);
+ g.fillStyle='#8593a3';g.font='600 18px Arial';g.fillText('LINE 01 // LIVE PRODUCTION COUNT',14,32);
+ g.fillStyle='#fff';g.font='800 90px '+F;g.fillText(String(s.checked).padStart(3,'0'),14,122);g.font='600 16px Arial';g.fillStyle='#8593a3';g.fillText('PARTS CHECKED',16,150);
+ [['PASS',s.PASS,'#2bd576'],['REWORK',s.REWORK,'#ff9f1c'],['RECYCLE',s.RECYCLE,'#ff4d4d']].forEach((x,i)=>{g.fillStyle=x[2];g.font='800 50px '+F;g.fillText(x[1],230+i*92,102);g.font='600 14px Arial';g.fillText(x[0],230+i*92,124)});
+ g.fillStyle='#fff';g.font='700 22px Arial';g.fillText('FIRST-PASS YIELD '+s.pass_rate+'%',230,172);S.screen.tex.needsUpdate=true}
+let lastL='g';
+function andon(s){const n=s.checked,rec=n?s.RECYCLE/n:0,bad=n?(s.RECYCLE+s.REWORK)/n:0;let L='g',t='ANDON GREEN: RUNNING NORMAL';
+ if(n>=3&&rec>.3){L='r';t='ANDON RED: SCRAP SPIKE, CALL SUPERVISOR'}else if(n>=3&&bad>.4){L='y';t='ANDON YELLOW: QUALITY DRIFTING, CHECK TOOLING'}
+ document.querySelectorAll('#andon i').forEach(i=>i.classList.toggle('on',i.classList.contains(L)));$('andont').textContent=t;
+ if(S&&S.tower)for(const k of['r','y','g'])S.tower[k].material.emissiveIntensity=k===L?1.6:.08;
+ if(L==='r'&&lastL!=='r'){beep(330,.25,'square',.08);beep(330,.25,'square',.08,.35)}lastL=L}
+let AC=null,snd=false,hum=null;
+function sound(on){snd=on;$('snd').textContent='SOUND: '+(on?'ON':'OFF');
+ if(on&&!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type='sawtooth';o.frequency.value=55;g.gain.value=0;o.connect(g);g.connect(AC.destination);o.start();hum=g}
+ if(AC){AC.resume();hum.gain.setTargetAtTime(on&&lineOn?.025:0,AC.currentTime,.3)}}
+function beep(f,d,t,v,at){if(!snd||!AC)return;t=t||'square';v=v||.05;at=at||0;const o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime+at;o.type=t;o.frequency.value=f;
+ g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.0001,n+d);o.connect(g);g.connect(AC.destination);o.start(n);o.stop(n+d)}
+function verdictSound(d){if(d==='PASS'){beep(880,.12,'sine');beep(1320,.2,'sine',.06,.12)}else if(d==='REWORK'){beep(520,.14);beep(520,.14,'square',.05,.22)}else beep(130,.55,'sawtooth',.09)}
+const sn=r=>new Date().toISOString().slice(0,10).replace(/-/g,'')+'-'+String(r.id).padStart(4,'0')+'-L01';
+function spc(rows){const c=$('spc'),g=c.getContext('2d'),W=c.width,H=c.height;g.clearRect(0,0,W,H);const d=rows.slice().reverse();
+ const pts=d.map((_,i)=>{const w=d.slice(Math.max(0,i-4),i+1);return 100*w.filter(x=>x.decision==='PASS').length/w.length});
+ const Y=v=>H-8-(H-30)*v/100,X=i=>8+(W-16)*(pts.length<2?0:i/(pts.length-1));
+ g.font='10px Arial';g.fillStyle='#8593a3';g.fillText('FIRST-PASS YIELD TREND (5-PART WINDOW)',8,13);g.setLineDash([4,4]);
+ g.strokeStyle='#2bd576';g.beginPath();g.moveTo(0,Y(90));g.lineTo(W,Y(90));g.stroke();g.strokeStyle='#ff4d4d';g.beginPath();g.moveTo(0,Y(60));g.lineTo(W,Y(60));g.stroke();g.setLineDash([]);
+ g.fillStyle='#2bd576';g.fillText('TARGET 90%',W-64,Y(90)-3);g.fillStyle='#ff4d4d';g.fillText('LCL 60%',W-50,Y(60)-3);
+ if(!pts.length)return;g.strokeStyle='#ffc400';g.lineWidth=2;g.beginPath();pts.forEach((v,i)=>i?g.lineTo(X(i),Y(v)):g.moveTo(X(i),Y(v)));g.stroke();
+ pts.forEach((v,i)=>{g.fillStyle=v<60?'#ff4d4d':'#ffc400';g.beginPath();g.arc(X(i),Y(v),2.6,0,6.3);g.fill()})}
+const CIN=['orbit','scan','ride','bins','top','side'];
+const VIEWS=[['orbit','ORBIT'],['top','TOP-DOWN'],['side','SIDE'],['ride','RIDE-ALONG'],['scan','SCANNER'],['bins','BIN CAM'],['cinema','CINEMA']];
+function setView(m){if(!S)return;S.mode=m;S.ct=0;document.querySelectorAll('#views button').forEach(b=>b.classList.toggle('on',b.dataset.m===m))}
+function radar(){const c=$('radar'),g=c.getContext('2d'),W=c.width,H=c.height,sx=(W-20)/17,sz=H/9.5,X=x=>10+(x+9)*sx,Z=z=>H/2+z*sz;
+ g.clearRect(0,0,W,H);g.fillStyle='#1b222c';g.fillRect(X(-9),Z(-1.3),15*sx,2.6*sz);g.fillStyle='#ffc400';g.fillRect(X(0)-1,Z(-1.9),2,3.8*sz);
+ for(const [k,bx,bz,col] of[['PASS',7.6,0,'#2bd576'],['REWORK',3.5,3.9,'#ff9f1c'],['RECYCLE',3.5,-3.9,'#ff4d4d']]){g.strokeStyle=col;g.lineWidth=2;g.strokeRect(X(bx)-1.2*sx,Z(bz)-1.2*sz,2.4*sx,2.4*sz)}
+ for(const p of parts){const u=p.userData;if(u.state==='landed')continue;g.fillStyle=u.scanned?'#'+COL[u.dec].toString(16).padStart(6,'0'):'#c4ccd6';g.beginPath();g.arc(X(p.position.x),Z(p.position.z),4,0,6.3);g.fill()}
+ g.fillStyle='#8593a3';g.font='600 11px Arial';g.fillText('RADAR',6,12)}
+function buildViews(){$('views').innerHTML=VIEWS.map(v=>`<button data-m="${v[0]}">${v[1]}</button>`).join('');
+ document.querySelectorAll('#views button').forEach(b=>b.onclick=()=>setView(b.dataset.m));setView('orbit')}
+init3d();buildViews();
+$('wo').textContent='WO-'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'-A';
+drawScreen({checked:0,PASS:0,REWORK:0,RECYCLE:0,pass_rate:0});
+(async()=>{const L=['CALIBRATING CAMERAS ................ OK','LOADING INSPECTION STANDARD (AQL 1.0) ... OK','CONNECTING SORTING ACTUATORS ......... OK','SYNCING SHIFT REGISTER ............... OK','STATION 01 ONLINE. NO FLAW LEAVES THE FLOOR.'];
+ const b=$('boot');b.onclick=()=>b.classList.add('off');for(let i=0;i<L.length;i++){$('bl').textContent+=L[i]+'\n';$('bp').style.width=(i+1)*20+'%';await wait(380)}
+ await wait(300);b.classList.add('off');setTimeout(()=>b.remove(),700)})();
+refresh();
+</script></body></html>
