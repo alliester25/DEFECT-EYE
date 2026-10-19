@@ -1,2 +1,11 @@
-# DEFECT-EYE
-DefectEye is an AI-powered defect inspection system built with Python, FastAPI, and OpenCV to identify manufacturing defects such as scrap/flash, gate cuts, and lens fingerprints. It features an interactive dashboard, an AI chatbot powered by optional Groq integration, and automated daily PDF reports for efficient quality monitoring  documentation.
+# DefectEye
+FastAPI + OpenCV defect inspection (scrap/flash, gate cuts, lens fingerprints) with dashboard, AI chatbot and daily PDF report.
+
+## Run (VS Code terminal)
+    python -m venv venv
+    venv\Scripts\activate          # Windows   (Mac/Linux: source venv/bin/activate)
+    pip install -r requirements.txt
+    uvicorn app.main:app --reload
+Open http://127.0.0.1:8000
+
+Optional smarter chatbot (Groq): set GROQ_API_KEY before starting. Optional: GROQ_MODEL (default llama-3.3-70b-versatile).
